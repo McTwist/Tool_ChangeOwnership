@@ -270,7 +270,7 @@ function ServerCmdChown(%client, %bl_id)
 	if (%bl_id $= "")
 	{
 		// Inform the user
-		if (%player.tool[%player.currTool] == ChownItem.getId() || %player.getMountedImage(0) == ChownImage.getId())
+		if (%player.getMountedImage(0) == ChownImage.getId())
 		{
 			messageClient(%client, '', "\c6Hit a brick and player or use \c3/chown \c6[\c1BL_ID\c6] to transfer bricks.");
 		}
