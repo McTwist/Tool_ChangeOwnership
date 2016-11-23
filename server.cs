@@ -221,7 +221,7 @@ function ChownImage::onFire(%this, %player)
 		%client.chown.setTarget(%bl_id);
 	}
 	// Select a brick
-	else if (%obj.getType & $TypeMasks::FxBrickAlwaysObjectType)
+	else if (%obj.getType() & $TypeMasks::FxBrickAlwaysObjectType)
 	{
 		%brick = firstWord(%obj);
 		%client.chown.setStartBrick(%brick);
@@ -346,7 +346,7 @@ function Chown::setTarget(%this, %bl_id)
 	if (isEventPending(%this.event))
 		return;
 	%this.bl_id = %bl_id;
-	%this.target_group = %group;
+	%this.target_group = "BrickGroup_" @ %bl_id;
 	// Automatic start
 	if (isObject(%this.brick))
 		%this.transfer();
@@ -384,6 +384,9 @@ function Chown::getBricks(%this)
 // Tick next batch of bricks to get
 function Chown::tickGetBricks(%this, %i)
 {
+	cancel(%this.event);
+	%this.event = "";
+
 	for (%limit = 0; %limit < %this.limit_bricks && %i < $Chown[%this, "Q"]; %limit++)
 	{
 		// Get next brick
@@ -477,7 +480,7 @@ function Chown::transfer(%this)
 	%source_group = %this.brick.getGroup();
 
 	// Same owner
-	if (%source_group.bl_id $= %this.bl_id)
+	if (%source_group.bl_id == %this.bl_id)
 		return %this.info("\c3Player already owns those bricks.");
 
 	// Check if target group exists
@@ -515,6 +518,9 @@ function Chown::transfer(%this)
 // Tick next batch of bricks to be transferred
 function Chown::tickTransfer(%this, %i)
 {
+	cancel(%this.event);
+	%this.event = "";
+	
 	for (%limit = 0; %limit < %this.limit_transfer && %i < $Chown[%this, "Q"]; %limit++)
 	{
 		%brick = $Chown[%this, "Q", %i++];
