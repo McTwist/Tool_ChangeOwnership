@@ -13,6 +13,12 @@
 // * trust to.
 // =================
 
+// ============
+// * Includes *
+// ============
+
+exec("./namedtargets.cs");
+
 // ===============
 // * Preferences *
 // ===============
@@ -520,76 +526,43 @@ function Chown::tickTransfer(%this, %brick_i)
 {
 	cancel(%this.event);
 	%this.event = "";
-	
-	for (%limit = 0; %limit < %this.limit_transfer && %brick_i < $Chown[%this, "Q"]; %limit++)
+
+	%queue_count = $Chown[%this, "Q"];
+	for (%limit = 0; %limit < %this.limit_transfer && %brick_i < %queue_count; %limit++)
 	{
 		%brick = $Chown[%this, "Q", %brick_i++];
+
+		// Reset name
+		%name = %brick.getName();
+		%brick.clearNTObjectName();
+		%brick.setName("");
 
 		// Move it to the new group
 		%this.target_group.add(%brick);
 		%brick.client = %this.target_group.client;
 		%brick.stackBL_ID = %this.bl_id;
 
+		// Set the name back
+		%brick.setNTObjectName(%name);
+
 		// TODO: Move this out in its own loop, reducing load significantly
-
-		// Handle names
-		if (strlen(%name = %brick.getName()))
-		{
-			// Remove from old group
-			%n = 0;
-			for (%i = 0; %i < %this.source_group.NTObjectCount[%name]; %i++)
-			{
-				%this.source_group.NTObject[%name, %n] = %this.source_group.NTObject[%name, %i];
-				%n += %this.source_group.NTObject[%name, %i] != %brick;
-			}
-			%this.source_group.NTObjectCount[%name] = %n;
-			// Reset removed ones
-			for (%j = %n; %j < %i; %j++)
-				%this.source_group.NTObject[%name, %j] = "";
-			// All removed, so clean up this mess
-			if (%this.source_group.NTObjectCount[%name] == 0)
-			{
-				// Remove from old group
-				%n = 0;
-				for (%i = 0; %i < %this.source_group.NTNameCount; %i++)
-				{
-					%this.source_group.NTName[%n] = %this.source_group.NTName[%i];
-					%n += %this.source_group.NTName[%i] !$= %name;
-				}
-				%this.source_group.NTNameCount = %n;
-				%this.source_group.NTObjectCount[%name] = 0;
-				// Reset removed ones
-				for (%j = %n; %j < %i; %j++)
-					%this.source_group.NTName[%j] = "";
-			}
-
-			// Add to new group
-			if (%this.target_group.NTObjectCount[%name] == 0)
-			{
-				%this.target_group.NTNameCount <<= 0;
-				%this.target_group.NTName[%this.target_group.NTNameCount] = %name;
-				%this.target_group.NTNameCount++;
-			}
-			%this.target_group.NTObjectCount[%name] <<= 0;
-			%this.target_group.NTObject[%name, %this.target_group.NTObjectCount[%name]] = %brick;
-			%this.target_group.NTObjectCount[%name]++;
-		}
 
 		// Handle spawn bricks
 		if (%brick.dataBlock.getId() == brickSpawnPointData.getId())
 		{
 			// Remove from old group
 			%n = 0;
-			for (%i = 0; %i < %this.source_group.spawnBrickCount; %i++)
+			%count = %this.source_group.spawnBrickCount;
+			for (%i = 0; %i < %count; %i++)
 			{
-				%this.source_group.spawnBrick[%n] = %this.source_group.spawnBrick[%i];
-				%n += %this.source_group.spawnBrick[%i] != %brick;
+				if (%this.source_group.spawnBrick[%i] == %brick)
+				{
+					%this.source_group.spawnBrick[%i] = %this.source_group.spawnBrick[%count - 1];
+					%this.source_group.spawnBrick[%count - 1] = "-1";
+					%this.source_group.spawnBrickCount--;
+					break;
+				}
 			}
-			%this.source_group.spawnBrickCount = %n;
-			// Reset removed ones
-			for (%j = %n; %j < %i; %j++)
-				// Set to default "removed" value
-				%this.source_group.spawnBrick[%j] = "-1";
 
 			// Add to new group
 			%this.target_group.spawnBrickCount <<= 0;
@@ -603,7 +576,7 @@ function Chown::tickTransfer(%this, %brick_i)
 		%this.info("\c3Transferring...");
 
 	// Next one
-	if (%brick_i < $Chown[%this, "Q"])
+	if (%brick_i < %queue_count)
 		%this.event = %this.schedule(30, tickTransfer, %brick_i);
 	// Finished
 	else
