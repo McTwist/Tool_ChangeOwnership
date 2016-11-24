@@ -26,21 +26,24 @@ exec("./namedtargets.cs");
 // BlocklandGlass
 if ($BLPrefs::Init)
 {
-	registerPref("Tool_ChangeOwnership", "", "Admin Command",  "bool", "$Pref::Server::CO::AdminCommand", false, "",        "", false, false, false);
-	registerPref("Tool_ChangeOwnership", "", "Queue speed",    "int",  "$Pref::Server::CO::QueueSpeed",     100, "1 1000",  "", false, false, true);
-	registerPref("Tool_ChangeOwnership", "", "Transfer speed", "int",  "$Pref::Server::CO::TransferSpeed", 1000, "1 10000", "", false, false, true);
+	registerPref("Tool_ChangeOwnership", "", "Admin Command",           "bool", "$Pref::Server::CO::AdminCommand",          false, "",        "", false, false, false);
+	registerPref("Tool_ChangeOwnership", "", "Force Create BrickGroup", "bool", "$Pref::Server::CO::ForceCreateBrickGroup",  true, "",        "", false, false, false);
+	registerPref("Tool_ChangeOwnership", "", "Queue speed",             "int",  "$Pref::Server::CO::QueueSpeed",              100, "1 1000",  "", false, false, true);
+	registerPref("Tool_ChangeOwnership", "", "Transfer speed",          "int",  "$Pref::Server::CO::TransferSpeed",          1000, "1 10000", "", false, false, true);
 }
 // RTB
 else if ($RTB::Hooks::ServerControl)
 {
-	RTB_registerPref("Admin Command",  "Change Ownership", "$Pref::Server::CO::AdminCommand",  "bool",        "Tool_ChangeOwnership", false, false, false, "");
-	RTB_registerPref("Queue speed",    "Change Ownership", "$Pref::Server::CO::QueueSpeed",    "int 1 1000",  "Tool_ChangeOwnership",   100, false, false, "");
-	RTB_registerPref("Transfer speed", "Change Ownership", "$Pref::Server::CO::TransferSpeed", "int 1 10000", "Tool_ChangeOwnership",  1000, false, false, "");
+	RTB_registerPref("Admin Command",           "Change Ownership", "$Pref::Server::CO::AdminCommand",           "bool",        "Tool_ChangeOwnership", false, false, false, "");
+	RTB_registerPref("Force Create BrickGroup", "Change Ownership", "$Pref::Server::CO::ForceCreateBrickGroup",  "bool",        "Tool_ChangeOwnership",  true, false, false, "");
+	RTB_registerPref("Queue speed",             "Change Ownership", "$Pref::Server::CO::QueueSpeed",             "int 1 1000",  "Tool_ChangeOwnership",   100, false, true,  "");
+	RTB_registerPref("Transfer speed",          "Change Ownership", "$Pref::Server::CO::TransferSpeed",          "int 1 10000", "Tool_ChangeOwnership",  1000, false, true,  "");
 }
 // Default
-if ($Pref::Server::CO::AdminCommand $= "")  $Pref::Server::CO::AdminCommand  = false;
-if ($Pref::Server::CO::QueueSpeed $= "")    $Pref::Server::CO::QueueSpeed    =   100;
-if ($Pref::Server::CO::TransferSpeed $= "") $Pref::Server::CO::TransferSpeed =  1000;
+if ($Pref::Server::CO::AdminCommand $= "")          $Pref::Server::CO::AdminCommand          = false;
+if ($Pref::Server::CO::ForceCreateBrickGroup $= "") $Pref::Server::CO::ForceCreateBrickGroup =  true;
+if ($Pref::Server::CO::QueueSpeed $= "")            $Pref::Server::CO::QueueSpeed            =   100;
+if ($Pref::Server::CO::TransferSpeed $= "")         $Pref::Server::CO::TransferSpeed         =  1000;
 
 // ===================
 // * Item datablocks *
@@ -494,6 +497,8 @@ function Chown::transfer(%this)
 
 	if (!isObject(%target_group))
 	{
+		if (!$Pref::Server::CO::ForceCreateBrickGroup)
+			return %this.info("\c3Unable to find the target.");
 		// We're done here
 		if (!%this.client.isSuperAdmin)
 			return %this.info("\c3You need to be a \c0Super Admin\c3.");
