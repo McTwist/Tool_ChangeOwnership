@@ -256,7 +256,7 @@ activatePackage(ChangeOwnershipPackage);
 // ============
 
 // Command to either get item or set target
-function ServerCmdChown(%client, %bl_id)
+function ServerCmdChown(%client, %t0, %t1, %t2, %t3, %t4)
 {
 	// Require a player spawned
 	if (!isObject(%player = %client.player))
@@ -269,13 +269,19 @@ function ServerCmdChown(%client, %bl_id)
 	if ($Pref::Server::CO::AdminCommand && !%client.isSuperAdmin)
 		return;
 
+	// Put together the arguments
+	for (%i = 0; strlen(%t[%i]); %i++)
+		%target = %target SPC %t[%i];
+
+	%target = trim(%target);
+
 	// Default command
-	if (%bl_id $= "")
+	if (%target $= "")
 	{
 		// Inform the user
 		if (%player.getMountedImage(0) == ChownImage.getId())
 		{
-			messageClient(%client, '', "\c6Hit a brick and player or use \c3/chown \c6[\c1BL_ID\c6] to transfer bricks.");
+			messageClient(%client, '', "\c6Hit a brick and player or use \c3/chown \c6[\c1BL_ID / Name\c6] to transfer bricks.");
 		}
 		// Give item to player
 		else
@@ -285,6 +291,20 @@ function ServerCmdChown(%client, %bl_id)
 		}
 		return;
 	}
+
+	// Find the target
+	%targetClient = findClientByName(%target);
+
+	if (!isObject(%targetClient))
+		%targetClient = findClientByBL_ID(%target);
+
+	if (isObject(%targetClient))
+		%bl_id = %targetClient.bl_id;
+	else if ((%target << 0) $= %target)
+		%bl_id = %target;
+	// And you failed
+	else
+		return messageClient(%client, '', "\c6Target \c3" @ %target @ "\c6 does not exists.");
 
 	// Create Chown
 	if (!isObject(%client.chown))
@@ -486,7 +506,7 @@ function Chown::transfer(%this)
 	if (isEventPending(%this.event))
 		return;
 
-	%source_group = %this.brick.getGroup();
+	%source_group = %this.source_group;
 
 	// Same owner
 	if (%source_group.bl_id == %this.bl_id)
